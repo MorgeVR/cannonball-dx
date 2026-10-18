@@ -41,10 +41,18 @@ feel natural; small physical screens can take more.
 
 Every layer of the OutRun video hardware already carries depth information:
 
-- **Sprites**: the engine's zoom index. Apparent size, and so inverse depth, is
-  proportional to `47 * zoom + 111`; zoom `0x7F` is the player's Ferrari. Each
-  hardware sprite is tagged with its zoom in an otherwise unused word of its
-  sprite entry. The Ferrari's shadow and passengers use the car's depth.
+- **Scenery and traffic**: their true distance into the scene (the engine's
+  `z`, 4 to `0x1FF`). The zoom index can't be used for these, because each
+  kind of object derives it differently: small scenery is drawn at a fraction
+  of normal zoom, traffic zoom depends on vehicle size, and ground strips such
+  as grass, water, sand and stones keep zoom fixed and swap artwork instead.
+  Traffic level with the player on the start grid is at `0x1D0`, which is
+  taken as the car's plane (the screen plane).
+- **The Ferrari**, its shadow and passengers sit on the car's plane.
+- **Other sprites** (tyre smoke, crash parts, clouds, logos) use their zoom
+  index, relative to the Ferrari's zoom (`0x7F`).
+- Each hardware sprite is tagged with its depth in an otherwise unused word of
+  its sprite entry.
 - **Road**: each scanline selects a pre-rendered road ROM row. The width of the
   road in that row is proportional to inverse depth on flat road, hills and
   splits alike. Widths are measured from the ROM once at start-up.

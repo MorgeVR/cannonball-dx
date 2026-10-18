@@ -924,28 +924,38 @@ std::exit(9);
 
     // -------------------------------------------------------------------------
     // Stereo 3D: tag the hardware sprite with its depth in word 8 (unused by
-    // the hardware format; bit 15 = valid, low byte = zoom index). The
-    // Ferrari's shadow and passengers share the car's depth so they stay
-    // attached to it.
+    // the hardware format; see stereo::TAG_*).
+    //  - Scenery and traffic: world depth (z16, stored in road_priority).
+    //    Their zoom index mixes distance with object size and is not usable.
+    //  - Ferrari, its shadow and passengers: the car's plane (screen plane).
+    //  - Anything else (smoke, crash parts, clouds, logos): zoom index.
+    // road_priority is only a distance for scenery and traffic; the Ferrari,
+    // crash and ending sequences reuse it as a draw-on-top value.
     // -------------------------------------------------------------------------
     {
         const bool ferrari_part =
             input == oferrari.spr_ferrari || input == oferrari.spr_shadow ||
             input == oferrari.spr_pass1   || input == oferrari.spr_pass2;
-        const uint8_t depth_zoom =
-            (ferrari_part && oferrari.spr_ferrari && oferrari.spr_ferrari->zoom != 0)
-                ? oferrari.spr_ferrari->zoom
-                : input->zoom;
-        output->data[8] = static_cast<uint16_t>(0x8000 | depth_zoom);
+        const int  slot = input->jump_index;
+        const bool road_object =
+            (slot < SPRITE_ENTRIES ||
+             (slot >= SPRITE_TRAFF1 && slot <= SPRITE_TRAFF8)) &&
+            input->road_priority > 0 && input->road_priority < 0x200;
+
+        if (ferrari_part)
+            output->data[8] = stereo::tag_world(stereo::CAR_PLANE_Z);
+        else if (road_object)
+            output->data[8] = stereo::tag_world(input->road_priority);
+        else
+            output->data[8] = stereo::tag_zoom(input->zoom);
 
         // Calibration sample: scenery and traffic standing on the road
         // (bottom-anchored), used to match road depth to sprite depth.
-        if (!ferrari_part && input->road_priority > 0 &&
-            ((input->draw_props & 0xC) >> 2) == 2 && stereo::enabled())
+        if (road_object && ((input->draw_props & 0xC) >> 2) == 2 && stereo::enabled())
         {
             const int y_bottom = sprite_y2 - 256;
             if (y_bottom >= 0 && y_bottom < 224)
-                stereo::add_sample(y_bottom, input->zoom);
+                stereo::add_sample(y_bottom, stereo::world_inv(input->road_priority));
         }
     }
 

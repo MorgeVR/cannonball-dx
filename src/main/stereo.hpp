@@ -46,8 +46,36 @@ namespace stereo
     constexpr int EYE_LEFT  = -1;
     constexpr int EYE_RIGHT = 1;
 
-    // Inverse depth of the Ferrari (zoom 0x7F), used to normalise sprites.
+    // Inverse depth of the Ferrari (zoom 0x7F), used to normalise sprites
+    // that have no world depth (smoke, crash debris, clouds, logos).
     constexpr float FERRARI_ZOOM_SIZE = 47.0f * 0x7F + 111.0f;
+
+    // World depth of road objects (scenery and traffic): the engine's z16
+    // (4..0x1FF, larger = closer). The zoom index cannot be used for these:
+    // each object family derives it differently (scenery z16 >> shift with a
+    // per-object shift, traffic (z16 >> 2) scaled by vehicle size, ground
+    // strips such as grass and water pin it at 0x80 and switch artwork
+    // instead). z16 is the same scale for all of them.
+    //
+    // Traffic placed level with the player on the start grid sits at 0x1D0,
+    // so that is the car's plane. Apparent size, and so inverse depth, of
+    // scenery is proportional to 47 * (z16 / 2) + 111, i.e. z16 + 4.72.
+    constexpr int   CAR_PLANE_Z   = 0x1D0;
+    constexpr float WORLD_Z_BIAS  = 111.0f / 23.5f;
+
+    inline float world_inv(int z16)
+    {
+        return (z16 + WORLD_Z_BIAS) / (CAR_PLANE_Z + WORLD_Z_BIAS);
+    }
+
+    // Depth tag stored in word 8 of each hardware sprite entry:
+    //   bit 15     valid
+    //   bit 14     1 = world depth (bits 0-8 = z16), 0 = zoom index (bits 0-7)
+    constexpr uint16_t TAG_VALID = 0x8000;
+    constexpr uint16_t TAG_WORLD = 0x4000;
+
+    inline uint16_t tag_world(int z16) { return static_cast<uint16_t>(TAG_VALID | TAG_WORLD | (z16 & 0x1FF)); }
+    inline uint16_t tag_zoom(uint8_t zoom) { return static_cast<uint16_t>(TAG_VALID | zoom); }
 
     // Fixed layer depths
     constexpr float INV_TILES_BACK  = 0.00f; // far backdrop (page 1)
@@ -65,13 +93,13 @@ namespace stereo
     extern State state;
 
     // Calibration samples recorded by the sprite engine during the game tick:
-    // ground-anchored sprites standing on the road (bottom scanline + zoom).
+    // ground-anchored sprites standing on the road (bottom scanline + inverse depth).
     struct Samples
     {
         static const int MAX = 64;
         int     count = 0;
         int16_t y[MAX];
-        uint8_t zoom[MAX];
+        float   inv[MAX];
     };
     extern Samples samples;
 
@@ -82,20 +110,26 @@ namespace stereo
     void begin_frame();
 
     // Record a calibration sample (from OSprites::do_sprite).
-    inline void add_sample(int y_bottom, uint8_t zoom)
+    inline void add_sample(int y_bottom, float inv)
     {
         if (samples.count < Samples::MAX)
         {
-            samples.y[samples.count]    = static_cast<int16_t>(y_bottom);
-            samples.zoom[samples.count] = zoom;
+            samples.y[samples.count]   = static_cast<int16_t>(y_bottom);
+            samples.inv[samples.count] = inv;
             samples.count++;
         }
     }
 
-    // Inverse depth of a sprite from its engine zoom index.
+    // Inverse depth of a sprite from its engine zoom index (no world depth).
     inline float sprite_inv(uint8_t zoom)
     {
         return (47.0f * zoom + 111.0f) / FERRARI_ZOOM_SIZE;
+    }
+
+    // Inverse depth from a sprite's depth tag (see TAG_*).
+    inline float tag_inv(uint16_t tag)
+    {
+        return (tag & TAG_WORLD) ? world_inv(tag & 0x1FF) : sprite_inv(static_cast<uint8_t>(tag & 0xFF));
     }
 
     // Horizontal shift for the current eye, in logical (native 320px-era) pixels.

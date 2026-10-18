@@ -1266,14 +1266,14 @@ void HWRoad::stereo_prepare_frame()
 
     // Auto-calibration: a sprite standing on the road at scanline y with zoom z
     // must have the same depth as the road at y, i.e.
-    //     width(y) / ref == sprite_inv(z)   =>   ref = width(y) / sprite_inv(z)
+    //     width(y) / ref == inv(sprite)   =>   ref = width(y) / inv(sprite)
     // Take the median estimate over this frame's samples and smooth over time.
     float estimates[stereo::Samples::MAX];
     int count = 0;
     for (int i = 0; i < stereo::samples.count; ++i)
     {
         const float w = width_at(stereo::samples.y[i]);
-        const float inv = stereo::sprite_inv(stereo::samples.zoom[i]);
+        const float inv = stereo::samples.inv[i];
         if (w > 2.0f && inv > 0.05f)
             estimates[count++] = w / inv;
     }
