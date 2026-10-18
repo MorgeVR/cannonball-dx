@@ -2,6 +2,7 @@
 #include "hwvideo/hwsprites.hpp"
 #include "globals.hpp"
 #include "frontend/config.hpp"
+#include "stereo.hpp"
 #include <chrono>
 #include <algorithm>
 
@@ -749,6 +750,15 @@ std::cout << "\r\t\t\t\t" << processed_lines << " sprite lines flipped";
         // xpos/top/ytarget).
         if (config.video.hiresprites == 1 && render_scale > 1)
             xpos += (offset * render_scale) / 2;
+
+        // Stereo 3D: horizontal parallax from the depth tag written by
+        // OSprites::do_sprite (word 8: bit 15 = valid, low byte = zoom index).
+        if (stereo::state.eye != stereo::EYE_NONE)
+        {
+            const uint16_t depth_tag = ramBuff[data + 8];
+            if (depth_tag & 0x8000)
+                xpos += stereo::shift_render(stereo::sprite_inv(depth_tag & 0xff), render_scale);
+        }
 
         // choose which ROM to read from - flipped or non-flipped
         const uint32_t* spritedata;
