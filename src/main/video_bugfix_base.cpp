@@ -254,13 +254,28 @@ void Video::prepare_frame()
             // Stereo 3D: render the frame once per eye with depth-based
             // horizontal parallax, then pack both eyes into 'pixels'.
             stereo::begin_frame();
-            hwroad.stereo_prepare_frame();
 
-            stereo::state.eye = stereo::EYE_LEFT;
-            render_layers(stereo_pixels[0], true);
+            // Screens without a 3D road (course map, Music Select, menus)
+            // switch the horizon off. Show those flat: both eyes identical.
+            hwroad.stereo_prepare_frame(oroad.horizon_base != ORoad::HORIZON_OFF);
 
-            stereo::state.eye = stereo::EYE_RIGHT;
-            render_layers(stereo_pixels[1], false);
+            if (stereo::state.road_active)
+            {
+                stereo::state.eye = stereo::EYE_LEFT;
+                render_layers(stereo_pixels[0], true);
+
+                stereo::state.eye = stereo::EYE_RIGHT;
+                render_layers(stereo_pixels[1], false);
+            }
+            else
+            {
+                // Flat 2D: render once and keep both persistent eye buffers
+                // identical, so returning to 3D starts from the same image.
+                stereo::state.eye = stereo::EYE_NONE;
+                render_layers(stereo_pixels[0], true);
+                std::memcpy(stereo_pixels[1], stereo_pixels[0],
+                            static_cast<std::size_t>(config.s16_width) * config.s16_height * sizeof(uint16_t));
+            }
 
             stereo::state.eye = stereo::EYE_NONE;
             stereo::compose(pixels, stereo_pixels[0], stereo_pixels[1],

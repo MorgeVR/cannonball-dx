@@ -1222,7 +1222,7 @@ void HWRoad::build_row_widths()
     stereo_ref_width = 0.0f;
 }
 
-void HWRoad::stereo_prepare_frame()
+void HWRoad::stereo_prepare_frame(bool road_scene)
 {
     const int control = road_control & 3;
     float line_w[2][STEREO_LINES];
@@ -1230,7 +1230,7 @@ void HWRoad::stereo_prepare_frame()
 
     for (int road = 0; road < 2; ++road)
     {
-        const bool road_enabled = (road == 0) ? (control != 3) : (control != 0);
+        const bool road_enabled = road_scene && ((road == 0) ? (control != 3) : (control != 0));
         for (int yy = 0; yy < STEREO_LINES; ++yy)
         {
             const uint16_t data = ramBuff[road * 0x100 + yy];

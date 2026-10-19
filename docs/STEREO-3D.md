@@ -61,7 +61,10 @@ Every layer of the OutRun video hardware already carries depth information:
   the road width at the car's depth automatically, so the road, scenery and car
   line up without hand tuning.
 - **Tilemaps**: distant backdrop, placed near infinity while the road is on
-  screen. Menus, the map and Music Select stay flat.
+  screen.
+- **Flat screens**: the course map (after a game and in Time Trial),
+  Music Select and menus switch the road's horizon off. Those frames are
+  rendered once and shown identically to both eyes, i.e. in flat 2D.
 - **Text / HUD**: always on the screen plane.
 
 Each frame is drawn twice with every element shifted horizontally by half of

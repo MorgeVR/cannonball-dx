@@ -43,8 +43,10 @@ public:
 
     // Stereo 3D: work out the inverse depth of every road scanline for the
     // current frame (and refresh the road/sprite depth calibration). Call once
-    // per frame before rendering the eyes.
-    void stereo_prepare_frame();
+    // per frame before rendering the eyes. road_scene = false for screens
+    // without a 3D road (course map, Music Select, menus): the frame is then
+    // shown flat and stereo::state.road_active is cleared.
+    void stereo_prepare_frame(bool road_scene);
 
 private:
     // Stereo 3D data
