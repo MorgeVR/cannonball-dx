@@ -80,25 +80,70 @@ namespace stereo
         }
     }
 
-    void cycle_mode()
+    namespace
     {
-        config.video.stereo = (config.video.stereo + 1) % MODE_COUNT;
+        const int DEPTH_STEPS[]  = { 4, 6, 8, 10, 12, 16, 20, 24 };
+        const int POPOUT_STEPS[] = { 0, 25, 50, 75, 100 };
+
+        // Next/previous entry of 'steps' relative to 'value' (which need not
+        // be one of the steps, e.g. a hand-edited config value), wrapping.
+        template <size_t N>
+        int step_in(const int (&steps)[N], int value, int direction)
+        {
+            if (direction >= 0)
+            {
+                for (int s : steps)
+                    if (s > value) return s;
+                return steps[0];
+            }
+            for (int i = static_cast<int>(N) - 1; i >= 0; --i)
+                if (steps[i] < value) return steps[i];
+            return steps[N - 1];
+        }
+    }
+
+    void step_mode(int direction)
+    {
+        const int n = MODE_COUNT;
+        config.video.stereo = ((config.video.stereo + (direction >= 0 ? 1 : -1)) % n + n) % n;
         std::cout << "Stereo 3D: " << mode_name(config.video.stereo) << std::endl;
     }
 
-    void cycle_depth()
+    void step_depth(int direction)
     {
-        static const int steps[] = { 4, 6, 8, 10, 12, 16, 20, 24 };
-        int next = steps[0];
-        for (int s : steps)
+        config.video.stereo_depth = step_in(DEPTH_STEPS, config.video.stereo_depth, direction);
+        std::cout << "Stereo 3D depth: " << config.video.stereo_depth << std::endl;
+    }
+
+    void step_popout(int direction)
+    {
+        config.video.stereo_popout = step_in(POPOUT_STEPS, config.video.stereo_popout, direction);
+        std::cout << "Stereo 3D pop-out: " << config.video.stereo_popout << "%" << std::endl;
+    }
+
+    void cycle_mode()  { step_mode(1); }
+    void cycle_depth() { step_depth(1); }
+
+    std::string menu_mode_text()
+    {
+        const char* value = "OFF";
+        switch (config.video.stereo)
         {
-            if (s > config.video.stereo_depth)
-            {
-                next = s;
-                break;
-            }
+            case MODE_SBS:       value = "SIDE BY SIDE"; break;
+            case MODE_SBS_CROSS: value = "CROSS EYE";    break;
+            case MODE_TAB:       value = "TOP BOTTOM";   break;
+            default:             break;
         }
-        config.video.stereo_depth = next;
-        std::cout << "Stereo 3D depth: " << next << std::endl;
+        return std::string(MENU_MODE_LABEL) + value;
+    }
+
+    std::string menu_depth_text()
+    {
+        return std::string(MENU_DEPTH_LABEL) + std::to_string(config.video.stereo_depth);
+    }
+
+    std::string menu_popout_text()
+    {
+        return std::string(MENU_POPOUT_LABEL) + std::to_string(config.video.stereo_popout);
     }
 }

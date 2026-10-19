@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <cmath>
 #include <algorithm>
+#include <string>
 
 namespace stereo
 {
@@ -164,7 +165,21 @@ namespace stereo
     // Human-readable name of a mode, for logging.
     const char* mode_name(int mode);
 
-    // Cycle helpers for hotkeys.
+    // Cycle helpers for hotkeys (forward, wrapping).
     void cycle_mode();
     void cycle_depth();
+
+    // Step a setting forwards (+1) or backwards (-1), wrapping.
+    void step_mode(int direction);
+    void step_depth(int direction);
+    void step_popout(int direction);
+
+    // Frontend menu rows (VIDEO > VIDEO ENHANCEMENTS). Text uses only
+    // characters available in the OutRun font.
+    constexpr const char* MENU_MODE_LABEL   = "STEREO 3D ";
+    constexpr const char* MENU_DEPTH_LABEL  = "3D DEPTH ";
+    constexpr const char* MENU_POPOUT_LABEL = "3D POP OUT ";
+    std::string menu_mode_text();
+    std::string menu_depth_text();
+    std::string menu_popout_text();
 }

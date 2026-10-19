@@ -15,7 +15,10 @@ screen mode. A native OpenXR big-screen renderer is the next phase.
 1. Set the engine resolution to **2x or higher** (each eye is packed at half
    resolution, so 2x keeps full arcade detail per eye).
 2. Turn off CRT / NTSC filtering, which would blur the two eyes into each other.
-3. Press **F12** to cycle the stereo output mode. **Shift+F12** cycles the depth.
+3. Turn it on in the menu under **Settings > Video > Video Enhancements >
+   Stereo 3D**, or press **F12** to cycle the output mode and **Shift+F12** to
+   cycle the depth. The same page has **3D Depth** and **3D Pop Out**; Enter
+   or Right steps forward, Left steps back.
 
 ## Modes (`video.stereo`)
 
